@@ -1,15 +1,6 @@
 const std = @import("std");
 
 pub fn addRunStep(b: *std.build.Builder, exe: *std.build.LibExeObjStep, comptime suffix: []const u8) void {
-    const run_cmd = exe.run();
-    run_cmd.step.dependOn(&exe.step);
-    if (b.args) |args| {
-        run_cmd.addArgs(args);
-    }
-
-    const exe_name = "smol-" ++ suffix;
-    const run_step = b.step("run-" ++ suffix, "Run " ++ exe_name);
-    run_step.dependOn(&run_cmd.step);
 }
 
 pub fn build(b: *std.build.Builder) void {
@@ -18,15 +9,39 @@ pub fn build(b: *std.build.Builder) void {
     // means any target is allowed, and the default is native. Other options
     // for restricting supported target set are available.
     const target = b.standardTargetOptions(.{});
-    
+
     // Standard release options allow the person running `zig build` to select
     // between Debug, ReleaseSafe, ReleaseFast, and ReleaseSmall.
     const mode = b.standardReleaseOptions();
 
-    const smol_emu = b.addExecutable("smol-emu", "src/emulator/main.zig");
-    smol_emu.setTarget(target);
-    smol_emu.setBuildMode(mode);
-    smol_emu.install();
+    // Common library
+    const common = std.build.Pkg {
+        .name = "common",
+        .path = "common/lib.zig",
+    };
 
-    addRunStep(b, smol_emu, "emu");
+    {
+        const fixed_size_queue_test = b.addTest("common/fixed_size_queue.zig");
+        
+        const test_step = b.step("test-common", "Test the common package");
+        test_step.dependOn(&fixed_size_queue_test.step);
+    }
+
+    // Smol-emu
+    {
+        const exe = b.addExecutable("smol-emu", "src/emulator/main.zig");
+        exe.setTarget(target);
+        exe.setBuildMode(mode);
+        exe.addPackage(common);
+        exe.install();
+
+        const run_cmd = exe.run();
+        run_cmd.step.dependOn(&exe.step);
+        if (b.args) |args| {
+            run_cmd.addArgs(args);
+        }
+
+        const run_step = b.step("run-emu", "Run the emulator");
+        run_step.dependOn(&run_cmd.step);
+    }
 }
