@@ -1,4 +1,4 @@
-# SmolEmu
+# Smol
 
 Smol is a retro-inspired fantasy game console.
 
