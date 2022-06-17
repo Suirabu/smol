@@ -43,5 +43,11 @@ pub fn build(b: *std.build.Builder) void {
 
         const run_step = b.step("run-emu", "Run the emulator");
         run_step.dependOn(&run_cmd.step);
+
+        const cpu_test = b.addTest("src/emulator/cpu.zig");
+        cpu_test.addPackage(common);
+
+        const test_step = b.step("test-emu", "Test the emulator");
+        test_step.dependOn(&cpu_test.step);
     }
 }

@@ -20,7 +20,7 @@ $ zig build run-emu
 ## Goals
 
 - [ ] Emulator
-    - [ ] CPU emulation
+    - [x] CPU emulation
     - [ ] Graphics
     - [ ] Audio
     - [ ] Proper timing
