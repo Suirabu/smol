@@ -1,6 +1,7 @@
 pub const QueueError = error {
     Overflow,
     Underflow,
+    InvalidIndex,
 };
 
 pub fn FixedSizeQueue(comptime T: type, comptime size: usize) type {
@@ -43,6 +44,15 @@ pub fn FixedSizeQueue(comptime T: type, comptime size: usize) type {
 
             return self.elements[self.len - 1];
         }
+
+        pub fn peek_nth(self: Self, index: isize) QueueError!T {
+            const true_index = if(index >= 0) index else @intCast(isize, self.len) + index;
+            if(true_index < 0 or true_index >= self.len) {
+                return QueueError.InvalidIndex;
+            }
+
+            return self.elements[@intCast(usize, true_index)];
+        }
     };
 }
 
@@ -80,4 +90,19 @@ test "FixedSizeQueue.peek()" {
     _ = try queue.pop();
 
     try expectError(QueueError.Underflow, queue.peek());
+}
+
+test "FixedSizeQueue.peek_nth()" {
+    var queue = FixedSizeQueue(u8, 3).new();
+
+    try queue.push(1);
+    try queue.push(2);
+    try queue.push(3);  
+
+    try expect((try queue.peek_nth(0)) == 1);
+    try expect((try queue.peek_nth(-2)) == 2);
+    try expect((try queue.peek_nth(-1)) == 3);
+
+    try expectError(QueueError.InvalidIndex, queue.peek_nth(-5));
+    try expectError(QueueError.InvalidIndex, queue.peek_nth(5));
 }
