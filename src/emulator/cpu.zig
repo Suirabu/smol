@@ -36,26 +36,26 @@ pub const Cpu = struct {
         };
     }
 
-    pub fn load_program(self: *Self, program: []const u8) !void {
+    pub fn loadProgram(self: *Self, program: []const u8) !void {
         if(program.len > max_program_size) {
             return error.NotEnoughMemory;
         }
         std.mem.copy(u8, self.memory[program_offset..], program);
     }
 
-    fn is_in_bounds(addr: usize) bool {
+    fn isInBounds(addr: usize) bool {
         return addr < memory_size;
     }
 
-    fn get_word(self: Self, addr: usize) !u8 {
-        if(!is_in_bounds(addr)) {
+    fn getWord(self: Self, addr: usize) !u8 {
+        if(!isInBounds(addr)) {
             return error.OutOfBounds;
         }
         return self.memory[addr];
     }
     
-    fn get_dword(self: Self, addr: usize) !u16 {
-        if(!is_in_bounds(addr)) {
+    fn getDword(self: Self, addr: usize) !u16 {
+        if(!isInBounds(addr)) {
             return error.OutOfBounds;
         }
 
@@ -75,11 +75,11 @@ pub const Cpu = struct {
             
             // Stack operations
             InsTag.push8 => {
-                try self.value_stack.push(try self.get_word(self.pc));
+                try self.value_stack.push(try self.getWord(self.pc));
                 self.pc += 1;
             },
             InsTag.push16 => {
-                try self.value_stack.push(try self.get_dword(self.pc));
+                try self.value_stack.push(try self.getDword(self.pc));
                 self.pc += 2;
             },
             InsTag.drop => {
@@ -96,7 +96,7 @@ pub const Cpu = struct {
                 try self.value_stack.push(a);
             },
             InsTag.over => {               
-                try self.value_stack.push(try self.value_stack.peek_nth(-2));
+                try self.value_stack.push(try self.value_stack.peekNth(-2));
             },
             InsTag.rot => {
                 const c = try self.value_stack.pop();
@@ -109,7 +109,7 @@ pub const Cpu = struct {
             InsTag.store8 => {
                 const addr = try self.value_stack.pop();
                 const a = try self.value_stack.pop();
-                if(!is_in_bounds(addr)) {
+                if(!isInBounds(addr)) {
                     return error.OutOfBounds;
                 }
                 self.memory[addr] = @intCast(u8, a);
@@ -117,7 +117,7 @@ pub const Cpu = struct {
             InsTag.store16 => {
                 const addr = try self.value_stack.pop();
                 const a = try self.value_stack.pop();
-                if(!is_in_bounds(addr + 1)) {
+                if(!isInBounds(addr + 1)) {
                     return error.OutOfBounds;
                 }
                 self.memory[addr] = @intCast(u8, a >> 8);
@@ -125,11 +125,11 @@ pub const Cpu = struct {
             },
             InsTag.load8 => {
                 const addr = try self.value_stack.pop();
-                try self.value_stack.push(try self.get_word(addr));
+                try self.value_stack.push(try self.getWord(addr));
             },
             InsTag.load16 => {
                 const addr = try self.value_stack.pop();
-                try self.value_stack.push(try self.get_dword(addr));
+                try self.value_stack.push(try self.getDword(addr));
             },
 
             // Arithmetic operations
@@ -209,18 +209,18 @@ pub const Cpu = struct {
                 try self.value_stack.push(cond);
             },
             InsTag.jmp => {
-                const addr = try self.get_dword(self.pc);
-                if(!is_in_bounds(addr)) {
+                const addr = try self.getDword(self.pc);
+                if(!isInBounds(addr)) {
                     return error.OutOfBounds;
                 }
                 self.pc = addr;
             },
             InsTag.jeq => {
                 const cond = try self.value_stack.pop();
-                const addr = try self.get_dword(self.pc);
+                const addr = try self.getDword(self.pc);
                 self.pc += 2;
                 
-                if(!is_in_bounds(addr)) {
+                if(!isInBounds(addr)) {
                     return error.OutOfBounds;
                 } else if(cond == cmp_equal) {
                     self.pc = addr;
@@ -228,10 +228,10 @@ pub const Cpu = struct {
             },
             InsTag.jne => {
                 const cond = try self.value_stack.pop();
-                const addr = try self.get_dword(self.pc);
+                const addr = try self.getDword(self.pc);
                 self.pc += 2;
                 
-                if(!is_in_bounds(addr)) {
+                if(!isInBounds(addr)) {
                     return error.OutOfBounds;
                 } else if(cond != cmp_equal) {
                     self.pc = addr;
@@ -239,10 +239,10 @@ pub const Cpu = struct {
             },
             InsTag.jlt => {
                 const cond = try self.value_stack.pop();
-                const addr = try self.get_dword(self.pc);
+                const addr = try self.getDword(self.pc);
                 self.pc += 2;
                 
-                if(!is_in_bounds(addr)) {
+                if(!isInBounds(addr)) {
                     return error.OutOfBounds;
                 } else if(cond == cmp_less) {
                     self.pc = addr;
@@ -250,10 +250,10 @@ pub const Cpu = struct {
             },
             InsTag.jle => {
                 const cond = try self.value_stack.pop();
-                const addr = try self.get_dword(self.pc);
+                const addr = try self.getDword(self.pc);
                 self.pc += 2;
                 
-                if(!is_in_bounds(addr)) {
+                if(!isInBounds(addr)) {
                     return error.OutOfBounds;
                 } else if(cond == cmp_less or cond == cmp_equal) {
                     self.pc = addr;
@@ -261,10 +261,10 @@ pub const Cpu = struct {
             },
             InsTag.jgt => {
                 const cond = try self.value_stack.pop();
-                const addr = try self.get_dword(self.pc);
+                const addr = try self.getDword(self.pc);
                 self.pc += 2;
                 
-                if(!is_in_bounds(addr)) {
+                if(!isInBounds(addr)) {
                     return error.OutOfBounds;
                 } else if(cond == cmp_greater) {
                     self.pc = addr;
@@ -272,19 +272,19 @@ pub const Cpu = struct {
             },
             InsTag.jge => {
                 const cond = try self.value_stack.pop();
-                const addr = try self.get_dword(self.pc);
+                const addr = try self.getDword(self.pc);
                 self.pc += 2;
                 
-                if(!is_in_bounds(addr)) {
+                if(!isInBounds(addr)) {
                     return error.OutOfBounds;
                 } else if(cond == cmp_greater or cond == cmp_equal) {
                     self.pc = addr;
                 }
             },
             InsTag.jsr => {
-                const addr = try self.get_dword(self.pc);
+                const addr = try self.getDword(self.pc);
                 self.pc += 2;
-                if(!is_in_bounds(addr)) {
+                if(!isInBounds(addr)) {
                     return error.OutOfBounds;
                 }
                 try self.call_stack.push(self.pc);
@@ -313,7 +313,7 @@ test "Stack operations" {
         0x10, 0,    // push8 0
         0x19,       // load16
     };
-    try cpu.load_program(program[0..]);
+    try cpu.loadProgram(program[0..]);
 
     try cpu.tick(); // push8 42
     try expect((try cpu.value_stack.peek()) == 42);
@@ -361,7 +361,7 @@ test "Arithmetic operations" {
         0x10, 4,    // push8 4
         0x24,       // mod
     };
-    try cpu.load_program(program[0..]);
+    try cpu.loadProgram(program[0..]);
 
     try cpu.tick(); // push8 3
     try cpu.tick(); // push8 4
@@ -401,7 +401,7 @@ test "Bitwise operations" {
         0x10, 2,            // push8 4
         0x35,               // shiftr
     };
-    try cpu.load_program(program[0..]);
+    try cpu.loadProgram(program[0..]);
 
     try cpu.tick(); // push8 0b11011011
     try cpu.tick(); // not
@@ -441,7 +441,7 @@ test "Comparison operations" {
         0x10, 7,    // push8 7
         0x40,       // cmp
     };
-    try cpu.load_program(program[0..]);
+    try cpu.loadProgram(program[0..]);
 
     try cpu.tick(); // push8 5
     try cpu.tick(); // push8 5
@@ -472,7 +472,7 @@ test "Branching operations" {
         0x10, 5,            // push8 5
         0x49                // ret
     };
-    try cpu.load_program(program[0..]);
+    try cpu.loadProgram(program[0..]);
 
     try cpu.tick(); // jmp 0x3005
     try cpu.tick(); // jsr 0x300A
