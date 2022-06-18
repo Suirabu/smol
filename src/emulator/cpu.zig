@@ -47,6 +47,10 @@ pub const Cpu = struct {
         return addr < memory_size;
     }
 
+    fn isWritable(addr: usize) bool {
+        return addr < program_offset;
+    }
+
     fn getWord(self: Self, addr: usize) !u8 {
         if(!isInBounds(addr)) {
             return error.OutOfBounds;
@@ -109,16 +113,16 @@ pub const Cpu = struct {
             InsTag.store8 => {
                 const addr = try self.value_stack.pop();
                 const a = try self.value_stack.pop();
-                if(!isInBounds(addr)) {
-                    return error.OutOfBounds;
+                if(!isWritable(addr)) {
+                    return error.NonWritable;
                 }
                 self.memory[addr] = @intCast(u8, a);
             },
             InsTag.store16 => {
                 const addr = try self.value_stack.pop();
                 const a = try self.value_stack.pop();
-                if(!isInBounds(addr + 1)) {
-                    return error.OutOfBounds;
+                if(!isWritable(addr + 1)) {
+                    return error.NonWritable;
                 }
                 self.memory[addr] = @intCast(u8, a >> 8);
                 self.memory[addr + 1] = @intCast(u8, a);
