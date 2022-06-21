@@ -48,8 +48,10 @@ pub fn build(b: *std.build.Builder) void {
 
         const cpu_test = b.addTest("src/emulator/cpu.zig");
         cpu_test.addPackage(common);
+        const memory_test = b.addTest("src/emulator/memory.zig");
 
         const test_step = b.step("test-emu", "Test the emulator");
         test_step.dependOn(&cpu_test.step);
+        test_step.dependOn(&memory_test.step);
     }
 }
