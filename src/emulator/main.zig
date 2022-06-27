@@ -1,7 +1,8 @@
 const std = @import("std");
-const c = @cImport({
-    @cInclude("SDL2/SDL.h");
-});
+
+const Cpu = @import("cpu.zig").Cpu;
+const graphics = @import("graphics.zig");
+const c = graphics.c;
 
 const window_width = 200;
 const window_height = 160;
@@ -30,6 +31,8 @@ pub fn main() anyerror!void {
     };
     defer c.SDL_DestroyRenderer(renderer);
     
+    const cpu = Cpu.new();
+
     loop: while(true) {
         // Poll events
         var e: c.SDL_Event = undefined;
@@ -41,6 +44,8 @@ pub fn main() anyerror!void {
         }
 
         _ = c.SDL_RenderClear(renderer);
+    
+        try graphics.renderCurrentState(renderer, cpu);
 
         c.SDL_RenderPresent(renderer);
 

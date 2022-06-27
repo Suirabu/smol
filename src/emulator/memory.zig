@@ -11,13 +11,13 @@ pub const Memory = packed struct {
 pub const TileMap = packed struct {
     const Self = @This();
 
-    const width = 64;
-    const height = 48;
+    pub const width = 64;
+    pub const height = 48;
     const num_tiles = width * height;
     
     tiles: [num_tiles]TileIndex,
 
-    pub fn getTile(self: Self, x: u8, y: u8) !TileIndex {
+    pub fn getTile(self: Self, x: usize, y: usize) !TileIndex {
         const index = y * width + x;
 
         if(index >= num_tiles) {
@@ -37,14 +37,14 @@ pub const TileAttributeTable = packed struct {
 
     attributes: [TileMap.num_tiles / 4]u8,
 
-    pub fn getAttribute(self: Self, x: u8, y: u8) !u2 {
+    pub fn getAttribute(self: Self, x: usize, y: usize) !u2 {
         const index = y * TileMap.width + x;
         const offset = index % 4;
 
         if(index >= TileMap.num_tiles) {
             return error.OutOfBounds;
         }
-        return @truncate(u2, self.attributes[index / 4] >> (6 - offset * 2));
+        return @truncate(u2, self.attributes[index / 4] >> (6 - @truncate(u3, offset) * 2));
     }
 };
 
@@ -83,10 +83,28 @@ pub const ColorPalette = packed struct {
     colors: [4]Color,
 };
 
+const c = @cImport({
+    @cInclude("SDL2/SDL.h");
+});
+
 pub const Color = packed struct {
+    const Self = @This();
+
     red: u3,
     green: u3,
     blue: u2,
+
+    pub fn asSdlColor(self: Self) c.SDL_Color {
+        // FIXME: This is *not* the right way to convert 8-bit RGB to 24-bit
+        // RGB as it cannot cleanly map 3 bit values to 8 bit values. This will
+        // need to be fixed.
+        return c.SDL_Color {
+            .r = @intCast(u8, self.red) * (255 / 0b111),
+            .g = @intCast(u8, self.green) * (255 / 0b111),
+            .b = @intCast(u8, self.blue) * (255 / 0b11),
+            .a = 0xFF,
+        };
+    }
 };
 
 // TODO: Define and implement IO registers
@@ -115,14 +133,14 @@ pub const GraphicData = packed struct {
 
     pixels: [num_pixels / 4]u8,
 
-    pub fn getPixelValue(self: Self, x: u8, y: u8) !u2 {
+    pub fn getPixelValue(self: Self, x: usize, y: usize) !u2 {
         const index = (y * width + x);
         const offset = (y * width + x) % 4;
 
         if(index >= num_pixels) {
             return error.OutOfBounds;
         }
-        return @truncate(u2, self.pixels[index / 4] >> (6 - offset * 2));
+        return @truncate(u2, self.pixels[index / 4] >> (6 - @truncate(u3, offset) * 2));
     }
 };
 
